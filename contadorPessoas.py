@@ -1,3 +1,5 @@
+#código para verificação de rosto e contagem de pessoas (entrada em ônibus)
+
 import cv2 as cv
 import numpy as np
 import logging
@@ -9,24 +11,24 @@ def center(x, y, w, h):
     cy = y + y1
     return cx,cy
 
-cap = cv.VideoCapture('3.mp4')
+cap = cv.VideoCapture('2.mp4') #Verificando rosto e contabilizador de rosto 
 
 bg = cv.createBackgroundSubtractorMOG2()
 
 detects = []
 
-post = 430
+post = 200 #altura das linhas de detecção 
 post2 = 606
-offset = 2
+offset = 5
 
-xy1 = (480, post2)
-xy2 = (495, post)
+xy1 = (495, post2)#480
+xy2 = (495, post)#495
 
-y1 = (540, 500)
-y2 = (550, 1)
+y1 = (550, 500)#540,500
+y2 = (550, 1)#550,1
 
-yy=(433,1)
-yy2 = (417, 400)
+yy=(433,1)#yy=(433,1)
+yy2 = (433, 400)#yy2 = (417, 400)
 
 post5 = 450
 offset5 = 300
@@ -38,9 +40,6 @@ total = 0
 
 up = 0
 down = 0
-
-atual = 0
-
 
 while 1:
 
@@ -62,7 +61,6 @@ while 1:
 
     contours, hierarchy = cv.findContours(closing, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)
 
-    
     i = 0
     for c in contours:
         (x,y,w,h) = cv.boundingRect(c)
@@ -81,7 +79,7 @@ while 1:
                 detects[i].append(centro)
             else:
                 detects[i].clear()
-            i += 1
+            i += 1  
 
     if i == 0:
         detects.clear()
@@ -100,6 +98,8 @@ while 1:
                     up += 1
                     total += 1
                     cv.line(frame, xy1, xy2, (0,255,0), 5)
+                    logging.basicConfig(filename="log.txt", level=logging.INFO, format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p') #Gerando log quando detectado movimentação de pessoa 
+                    logging.info("PESSOAS NO AMBIENTE: "+str(up-down)+"/50")
                     continue
 
                 if detect[c-1][1] > post2 and l[1] < post:
@@ -107,6 +107,8 @@ while 1:
                     down += 1
                     total += 1
                     cv.line(frame, xy1, xy2, (0,0,255), 5)
+                    logging.basicConfig(filename="log.txt", level=logging.INFO, format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p') #Gerando log quando detectado movimentação de pessoa 
+                    logging.info("PESSOAS NO AMBIENTE: "+str(up-down)+"/50")                    
                     continue
                 
                 if c > 0:
@@ -117,30 +119,25 @@ while 1:
         ret, frame = cap.read()
         frame = cv.resize(frame, None, fx=0.7, fy=0.7, interpolation = cv.INTER_LINEAR)
         grayscale_img = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
-        bodies_detect = class_body.detectMultiScale(grayscale_img, 1.2 , 4)
+        bodies_detect = class_body.detectMultiScale(grayscale_img, 1.2 , 7)#ajuste fino
         for (x,y,w,h) in bodies_detect:
             cv.rectangle(frame,(x,y),(x+w,y+h),(0,255,0),2)
             cv.imshow("frame", frame)
 
+
     cv.line(frame, xy1, xy2, (255,0,0), 3)
     cv.line(frame,(yy[0], post-offset), (yy2[0], post2-offset), (255,255,0), 2)
     cv.line(frame,(y1[0], post2+offset), (y2[0], post+offset), (255,255,0), 2)
-    
-    # cv.line(frame, xy5, xy6, (255,0,0), 3)
  
-    cv.putText(frame, "MOVIMENTACAO DE PESSOAS: "+str(total), (10, 20), cv.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 255),2)
-    cv.putText(frame, "descendo: "+str(up), (10, 40), cv.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0),2)
-    cv.putText(frame, "subindo: "+str(down), (10, 60), cv.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255),2)
-    # cv.putText(frame,"QUANTIDADE NA FESTA: "+str(up-down)+"/200", (10, 80), cv.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 255),2)
+    cv.putText(frame, "MOVIMENTACAO DE PESSOAS: "+str(total), (10, 20), cv.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 255),2) #quantidade de pessoas detectadas perto da linha de verificação
+    cv.putText(frame, "ENTRANDO: "+str(up), (10, 40), cv.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0),2)
+    cv.putText(frame, "SAINDO: "+str(down), (10, 60), cv.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255),2)
+    cv.putText(frame,"NO AMBIENTE: "+str(up-down)+"/50 PESSOAS", (10, 80), cv.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 255),2)
     cv.imshow("frame", frame)
-    #cv.imshow("closing", closing)
 
     k = cv.waitKey(20)
     if k == 27:
         break
-
-logging.basicConfig(filename="log.txt", level=logging.INFO, format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p')
-logging.info("QUANTIDADE NA FESTA: "+str(up-down)+"/200")
 
 cap.release()
 cv.destroyAllWindows()
